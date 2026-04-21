@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Content Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090d;
+  --s1:#111116;
+  --s2:#18181f;
+  --s3:#202028;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --text:#ededf0;
+  --muted:rgba(237,237,240,0.45);
+  --muted2:rgba(237,237,240,0.25);
+  --accent:#c8f561;
+  --accent2:#61b8f5;
+  --radius:10px;
+  --radius-lg:16px;
+  --mono:'DM Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* layout */
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--s1);border-right:1px solid var(--border);padding:28px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.main{overflow:hidden}
+
+/* sidebar */
+.logo{padding:0 20px 28px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.logo-text{font-family:var(--display);font-size:16px;font-weight:800;letter-spacing:-0.02em}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-top:2px}
+.nav-label{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted2);padding:0 20px;margin-bottom:8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--muted);transition:all 0.15s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-item.active{color:var(--text);border-left-color:var(--accent);background:rgba(200,245,97,0.05)}
+.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.nav-add{margin:12px 16px 0;padding:8px 12px;background:rgba(200,245,97,0.1);border:1px solid rgba(200,245,97,0.2);border-radius:var(--radius);color:var(--accent);font-family:var(--mono);font-size:11px;cursor:pointer;text-align:center;transition:all 0.15s;letter-spacing:0.04em}
+.nav-add:hover{background:rgba(200,245,97,0.18)}
+
+/* pages */
+.page{display:none;padding:32px 36px;animation:fadeIn 0.25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* page header */
+.page-header{margin-bottom:28px}
+.page-title{font-family:var(--display);font-size:28px;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px}
+.page-sub{color:var(--muted);font-size:13px}
+
+/* metric cards */
+.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.metric-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
+.metric-label{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.metric-val{font-size:26px;font-weight:500;letter-spacing:-0.02em}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.metric-card.accent{border-color:rgba(200,245,97,0.25);background:rgba(200,245,97,0.04)}
+.metric-card.accent .metric-val{color:var(--accent)}
+
+/* project cards grid */
+.project-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px}
+.project-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all 0.15s;position:relative}
+.project-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.project-card.best{border-color:rgba(200,245,97,0.3)}
+.best-badge{position:absolute;top:14px;right:14px;font-family:var(--mono);font-size:9px;letter-spacing:0.08em;background:rgba(200,245,97,0.15);color:var(--accent);padding:3px 8px;border-radius:4px;text-transform:uppercase}
+.project-color-bar{height:3px;border-radius:2px;margin-bottom:14px}
+.project-name{font-family:var(--display);font-size:15px;font-weight:700;margin-bottom:4px}
+.project-meta{font-size:11px;color:var(--muted);margin-bottom:14px}
+.project-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pstat{background:var(--s2);border-radius:6px;padding:8px 10px}
+.pstat-label{font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+.pstat-val{font-size:13px;font-weight:500}
+
+/* section */
+.section-title{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+
+/* chart wrapper */
+.chart-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:20px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.chart-title{font-size:13px;font-weight:500}
+.chart-two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+
+/* calendar */
+.cal-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cal-nav{padding:6px 12px;font-size:12px;font-family:var(--mono);background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;transition:all 0.15s}
+.cal-nav:hover{border-color:var(--border2)}
+.cal-month{font-size:14px;font-weight:500;min-width:90px;text-align:center}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.cal-dow div{font-family:var(--mono);font-size:9px;color:var(--muted2);text-align:center;padding:4px 0;letter-spacing:0.04em}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{min-height:60px;background:var(--s2);border-radius:6px;padding:5px 6px;cursor:pointer;border:1px solid transparent;transition:border-color 0.15s;font-size:10px;color:var(--muted2)}
+.cal-day:hover{border-color:var(--border2)}
+.cal-day.today{border-color:rgba(97,184,245,0.4)}
+.cal-day.empty{background:rgba(255,255,255,0.01);cursor:default}
+.post-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin:1px}
+.day-num{font-size:10px;color:var(--muted2);margin-bottom:2px}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* post list */
+.post-list{margin-top:16px}
+.post-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.post-item:last-child{border-bottom:none}
+.post-plat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.post-info{flex:1}
+.post-title-text{font-size:13px;font-weight:500;margin-bottom:2px}
+.post-meta-text{font-size:11px;color:var(--muted)}
+.post-perf{text-align:right;font-size:11px;color:var(--muted)}
+.post-views{font-size:13px;font-weight:500;color:var(--text);margin-bottom:1px}
+
+/* formula badge */
+.formula-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted2);background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:4px 10px}
+
+/* button */
+.btn{padding:9px 18px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text);font-family:var(--body);font-size:13px;cursor:pointer;transition:all 0.15s}
+.btn:hover{background:var(--s2)}
+.btn.primary{background:var(--accent);color:#0a0a0d;border-color:var(--accent);font-weight:500}
+.btn.primary:hover{opacity:0.88}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn.danger{border-color:rgba(226,75,74,0.3);color:#f09595}
+.btn.danger:hover{background:rgba(226,75,74,0.1)}
+
+/* modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;width:460px;max-width:90vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--display);font-size:18px;font-weight:700;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--body);font-size:13px;padding:9px 12px;outline:none;transition:border-color 0.15s}
+.field input:focus,.field select:focus{border-color:rgba(200,245,97,0.4)}
+.field select option{background:var(--s2)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.hint{font-size:11px;color:var(--muted2);margin-top:5px;font-family:var(--mono)}
+
+/* top posts table */
+.top-table{width:100%;border-collapse:collapse;font-size:12px}
+.top-table th{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;color:var(--muted2);text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.top-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--muted)}
+.top-table tr:last-child td{border-bottom:none}
+.top-table td:first-child{color:var(--text);font-weight:500}
+
+/* color picker row */
+.color-row{display:flex;gap:8px;flex-wrap:wrap}
+.color-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s}
+.color-opt.selected{border-color:white}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-text">ContentOS</div>
+    <div class="logo-sub">Performance Tracker</div>
+  </div>
+  <div class="nav-label">Overview</div>
+  <div class="nav-item active" onclick="showPage('dashboard',this)">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.8"/><rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.8"/><rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.4"/><rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.4"/></svg>
+    메인 대시보드
+  </div>
+  <div style="height:16px"></div>
+  <div class="nav-label">Projects</div>
+  <div id="nav-projects"></div>
+  <div class="nav-add" onclick="openProjectModal()">+ 프로젝트 추가</div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD PAGE -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div class="page-title">Overview</div>
+      <div class="page-sub">전체 프로젝트 성과 요약</div>
+    </div>
+    <div class="metric-row" id="dash-metrics"></div>
+    <div class="section-title">프로젝트별 성과</div>
+    <div class="project-grid" id="dash-projects"></div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">플랫폼별 총 조회수 (전체 프로젝트)</div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="dash-chart-platform" role="img" aria-label="플랫폼별 조회수">플랫폼별 조회수</canvas></div>
+    </div>
+  </div>
+
+  <!-- PROJECT PAGE (dynamic) -->
+  <div class="page" id="page-project">
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div>
+        <div class="page-title" id="proj-page-title"></div>
+        <div class="page-sub" id="proj-page-sub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn sm" onclick="openPostModal()">+ 콘텐츠 등록</button>
+        <button class="btn sm danger" onclick="deleteCurrentProject()">프로젝트 삭제</button>
+      </div>
+    </div>
+
+    <div class="metric-row" id="proj-metrics"></div>
+
+    <div class="chart-two">
+      <div class="chart-wrap" style="margin-bottom:0">
+        <div class="chart-header">
+          <div class="chart-title">플랫폼별 조회수</div>
+          <div class="formula-badge">조회수 합산</div>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="proj-chart-platform" role="img" aria-label="플랫폼별 조회수">데이터</canvas></div>
+      </div>
+      <div class="chart-wrap" style="margin-bottom:0">
+        <div class="chart-header">
+          <div class="chart-title">유형별 평균 참여율</div>
+          <div class="formula-badge">플랫폼별 공식 적용</div>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="proj-chart-type" role="img" aria-label="유형별 참여율">데이터</canvas></div>
+      </div>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">캘린더</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="cal-nav" onclick="calPrev()">←</button>
+          <span class="cal-month" id="cal-month-label"></span>
+          <button class="cal-nav" onclick="calNext()">→</button>
+        </div>
+      </div>
+      <div class="legend" id="cal-legend"></div>
+      <div class="cal-dow">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="day-posts" class="post-list" style="display:none"></div>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">상위 콘텐츠 (조회수 기준)</div>
+      </div>
+      <table class="top-table" id="top-table">
+        <thead><tr><th>제목</th><th>플랫폼</th><th>유형</th><th>조회수</th><th>참여율</th></tr></thead>
+        <tbody id="top-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <div class="modal-title" id="proj-modal-title">프로젝트 추가</div>
+    <div class="field">
+      <label>프로젝트 이름</label>
+      <input type="text" id="pf-name" placeholder="예: 데이브 더 다이버 글로벌"/>
+    </div>
+    <div class="field">
+      <label>설명</label>
+      <input type="text" id="pf-desc" placeholder="예: 북미/유럽 공식 SNS 운영"/>
+    </div>
+    <div class="field">
+      <label>색상</label>
+      <div class="color-row" id="color-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="saveProject()">저장</button>
+      <button class="btn" onclick="closeModal('modal-project')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST MODAL -->
+<div class="modal-overlay" id="modal-post">
+  <div class="modal">
+    <div class="modal-title">콘텐츠 등록</div>
+    <div class="field-row">
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="cf-date"/>
+      </div>
+      <div class="field">
+        <label>플랫폼</label>
+        <select id="cf-platform">
+          <option value="X">X (트위터)</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Discord">Discord</option>
+          <option value="YouTube">YouTube</option>
+          <option value="공식홈페이지">공식홈페이지</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>콘텐츠 유형</label>
+        <select id="cf-type">
+          <option value="공지">공지/업데이트</option>
+          <option value="이벤트">이벤트</option>
+          <option value="밈">밈/유머</option>
+          <option value="영상">영상</option>
+          <option value="팬아트">팬아트/UGC</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>제목</label>
+        <input type="text" id="cf-title" placeholder="콘텐츠 제목"/>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>조회수</label>
+        <input type="number" id="cf-views" placeholder="0" min="0"/>
+      </div>
+      <div class="field">
+        <label>좋아요</label>
+        <input type="number" id="cf-likes" placeholder="0" min="0"/>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>댓글</label>
+        <input type="number" id="cf-comments" placeholder="0" min="0"/>
+      </div>
+      <div class="field">
+        <label>공유/리트윗</label>
+        <input type="number" id="cf-shares" placeholder="0" min="0"/>
+      </div>
+    </div>
+    <div class="hint" id="eng-formula-hint"></div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="savePost()">저장</button>
+      <button class="btn" onclick="closeModal('modal-post')">취소</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── DATA ────────────────────────────────────────────────
+const PLATFORM_COLORS = {
+  X:'#378ADD', Instagram:'#D4537E', Discord:'#1D9E75',
+  YouTube:'#E24B4A', 공식홈페이지:'#7F77DD'
+};
+const PLATFORMS = ['X','Instagram','Discord','YouTube','공식홈페이지'];
+const TYPES = ['공지','이벤트','밈','영상','팬아트'];
+const PROJECT_COLORS = ['#c8f561','#61b8f5','#f561a4','#f5a461','#61f5d4','#a461f5','#f56161'];
+
+// 참여율 공식 (플랫폼별)
+function engRate(p) {
+  if (!p.views || p.views === 0) return 0;
+  if (p.platform === 'YouTube') {
+    return (p.likes + p.comments) / p.views * 100;
+  } else if (p.platform === '공식홈페이지') {
+    return p.comments / p.views * 100;
+  } else {
+    return (p.likes + p.comments + p.shares) / p.views * 100;
+  }
+}
+
+function engFormula(platform) {
+  if (platform === 'YouTube') return '참여율 = (좋아요 + 댓글) ÷ 조회수 × 100';
+  if (platform === '공식홈페이지') return '참여율 = 댓글 ÷ 페이지뷰 × 100';
+  return '참여율 = (좋아요 + 댓글 + 공유) ÷ 조회수 × 100';
+}
+
+function fmtNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'K';
+  return String(n);
+}
+
+let projects = [
+  {
+    id:'p1', name:'아이온 클래식 라이브', desc:'국내 공식 SNS 운영 (2021~2025)', color:'#c8f561',
+    posts:[
+      {date:'2025-03-04',platform:'X',type:'공지',title:'3월 업데이트 공지',views:12400,likes:380,comments:54,shares:210},
+      {date:'2025-03-06',platform:'공식홈페이지',type:'공지',title:'8.4 패치노트',views:28000,likes:0,comments:320,shares:0},
+      {date:'2025-03-08',platform:'YouTube',type:'영상',title:'업데이트 트레일러',views:54000,likes:2100,comments:430,shares:0},
+      {date:'2025-03-10',platform:'Instagram',type:'이벤트',title:'봄 이벤트 홍보',views:32000,likes:1800,comments:290,shares:120},
+      {date:'2025-03-12',platform:'Discord',type:'밈',title:'커뮤니티 밈',views:4200,likes:320,comments:210,shares:40},
+      {date:'2025-03-15',platform:'X',type:'팬아트',title:'팬아트 소개',views:9800,likes:620,comments:88,shares:340},
+      {date:'2025-03-18',platform:'공식홈페이지',type:'이벤트',title:'봄 이벤트 상세',views:19200,likes:0,comments:188,shares:0},
+      {date:'2025-03-21',platform:'YouTube',type:'영상',title:'개발자 노트 영상',views:38000,likes:1600,comments:310,shares:0},
+      {date:'2025-03-24',platform:'Instagram',type:'밈',title:'인스타 밈',views:21000,likes:1100,comments:220,shares:75},
+      {date:'2025-03-27',platform:'Discord',type:'이벤트',title:'디스코드 챌린지',views:3100,likes:280,comments:190,shares:30},
+    ]
+  },
+  {
+    id:'p2', name:'아이온 북미 마케팅', desc:'북미 서비스 콘텐츠 지원 (해외)', color:'#61b8f5',
+    posts:[
+      {date:'2025-03-03',platform:'X',type:'공지',title:'March Update Notice',views:18200,likes:720,comments:94,shares:410},
+      {date:'2025-03-05',platform:'공식홈페이지',type:'공지',title:'8.4 Patch Notes EN',views:41000,likes:0,comments:520,shares:0},
+      {date:'2025-03-09',platform:'YouTube',type:'영상',title:'Update Trailer EN',views:89000,likes:3800,comments:720,shares:0},
+      {date:'2025-03-13',platform:'Instagram',type:'이벤트',title:'Spring Event EN',views:48000,likes:2900,comments:440,shares:280},
+      {date:'2025-03-17',platform:'Discord',type:'공지',title:'Community Notice',views:6800,likes:480,comments:310,shares:90},
+      {date:'2025-03-22',platform:'X',type:'밈',title:'Community Meme',views:31000,likes:1800,comments:620,shares:980},
+      {date:'2025-03-26',platform:'공식홈페이지',type:'이벤트',title:'Spring Event Page',views:33000,likes:0,comments:290,shares:0},
+    ]
+  }
+];
+
+let currentProjectId = null;
+let calYear, calMonth;
+const TODAY = new Date();
+calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
+
+let dashChart, projChartPlatform, projChartType;
+
+// ── NAV ─────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('nav-projects');
+  nav.innerHTML = projects.map(p => `
+    <div class="nav-item" id="nav-${p.id}" onclick="showProject('${p.id}',this)">
+      <span class="nav-dot" style="background:${p.color}"></span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+    </div>`).join('');
+}
+
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+}
+
+function showProject(id, el) {
+  currentProjectId = id;
+  const p = projects.find(x=>x.id===id);
+  if(!p) return;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else { const navEl = document.getElementById('nav-'+id); if(navEl) navEl.classList.add('active'); }
+  document.getElementById('page-project').classList.add('active');
+  document.getElementById('proj-page-title').textContent = p.name;
+  document.getElementById('proj-page-sub').textContent = p.desc;
+  if(p.posts.length) {
+    const latest = p.posts.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const d = new Date(latest.date);
+    calYear = d.getFullYear(); calMonth = d.getMonth();
+  } else {
+    calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
+  }
+  renderProjectPage(p);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+function renderDashboard() {
+  const allPosts = projects.flatMap(p=>p.posts);
+  const totalViews = allPosts.reduce((s,p)=>s+p.views,0);
+  const totalPosts = allPosts.length;
+  const avgEng = allPosts.length ? allPosts.reduce((s,p)=>s+engRate(p),0)/allPosts.length : 0;
+
+  // best project by views
+  const bestProj = projects.slice().sort((a,b) => {
+    const av = a.posts.reduce((s,p)=>s+p.views,0);
+    const bv = b.posts.reduce((s,p)=>s+p.views,0);
+    return bv-av;
+  })[0];
+
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-label">총 프로젝트</div><div class="metric-val">${projects.length}</div><div class="metric-sub">운영 중</div></div>
+    <div class="metric-card accent"><div class="metric-label">전체 조회수</div><div class="metric-val">${fmtNum(totalViews)}</div><div class="metric-sub">누적 합산</div></div>
+    <div class="metric-card"><div class="metric-label">전체 게시물</div><div class="metric-val">${totalPosts}</div><div class="metric-sub">전체 프로젝트</div></div>
+    <div class="metric-card"><div class="metric-label">평균 참여율</div><div class="metric-val">${avgEng.toFixed(1)}%</div><div class="metric-sub">플랫폼별 공식 적용</div></div>
+  `;
+
+  const container = document.getElementById('dash-projects');
+  container.innerHTML = projects.map(p => {
+    const views = p.posts.reduce((s,x)=>s+x.views,0);
+    const eng = p.posts.length ? p.posts.reduce((s,x)=>s+engRate(x),0)/p.posts.length : 0;
+    const isBest = bestProj && p.id === bestProj.id;
+    return `
+      <div class="project-card${isBest?' best':''}" onclick="showProject('${p.id}')">
+        ${isBest?'<div class="best-badge">TOP</div>':''}
+        <div class="project-color-bar" style="background:${p.color}"></div>
+        <div class="project-name">${p.name}</div>
+        <div class="project-meta">${p.desc}</div>
+        <div class="project-stats">
+          <div class="pstat"><div class="pstat-label">조회수</div><div class="pstat-val">${fmtNum(views)}</div></div>
+          <div class="pstat"><div class="pstat-label">게시물</div><div class="pstat-val">${p.posts.length}</div></div>
+          <div class="pstat"><div class="pstat-label">참여율</div><div class="pstat-val">${eng.toFixed(1)}%</div></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // platform chart
+  const platViews = PLATFORMS.map(pl => allPosts.filter(p=>p.platform===pl).reduce((s,p)=>s+p.views,0));
+  if(dashChart) dashChart.destroy();
+  dashChart = new Chart(document.getElementById('dash-chart-platform'),{
+    type:'bar',
+    data:{labels:PLATFORMS,datasets:[{data:platViews,backgroundColor:PLATFORMS.map(p=>PLATFORM_COLORS[p]),borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:11}}},
+              y:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:11},callback:v=>fmtNum(v)},grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+}
+
+// ── PROJECT PAGE ─────────────────────────────────────────
+function renderProjectPage(p) {
+  const views = p.posts.reduce((s,x)=>s+x.views,0);
+  const eng = p.posts.length ? p.posts.reduce((s,x)=>s+engRate(x),0)/p.posts.length : 0;
+  const topPlatData = {};
+  p.posts.forEach(x=>{ topPlatData[x.platform]=(topPlatData[x.platform]||0)+x.views; });
+  const topPlat = Object.entries(topPlatData).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('proj-metrics').innerHTML = `
+    <div class="metric-card accent"><div class="metric-label">총 조회수</div><div class="metric-val">${fmtNum(views)}</div></div>
+    <div class="metric-card"><div class="metric-label">게시물 수</div><div class="metric-val">${p.posts.length}</div></div>
+    <div class="metric-card"><div class="metric-label">평균 참여율</div><div class="metric-val">${eng.toFixed(1)}%</div><div class="metric-sub">플랫폼별 공식 적용</div></div>
+    <div class="metric-card"><div class="metric-label">최고 채널</div><div class="metric-val" style="font-size:16px">${topPlat?topPlat[0]:'—'}</div></div>
+  `;
+
+  renderProjectCharts(p);
+  renderCal(p);
+  renderTopTable(p);
+}
+
+function renderProjectCharts(p) {
+  const platViews = PLATFORMS.map(pl=>p.posts.filter(x=>x.platform===pl).reduce((s,x)=>s+x.views,0));
+  const typeEng = TYPES.map(ty=>{
+    const tp = p.posts.filter(x=>x.type===ty);
+    return tp.length ? parseFloat((tp.reduce((s,x)=>s+engRate(x),0)/tp.length).toFixed(2)) : 0;
+  });
+  if(projChartPlatform) projChartPlatform.destroy();
+  if(projChartType) projChartType.destroy();
+  projChartPlatform = new Chart(document.getElementById('proj-chart-platform'),{
+    type:'bar',
+    data:{labels:PLATFORMS,datasets:[{data:platViews,backgroundColor:PLATFORMS.map(p=>PLATFORM_COLORS[p]),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:10},maxRotation:30}},
+              y:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:10},callback:v=>fmtNum(v)},grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+  projChartType = new Chart(document.getElementById('proj-chart-type'),{
+    type:'bar',
+    data:{labels:TYPES,datasets:[{data:typeEng,backgroundColor:'#7F77DD',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:10}}},
+              y:{ticks:{color:'rgba(237,237,240,0.4)',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}}}
+  });
+}
+
+// ── CALENDAR ─────────────────────────────────────────────
+function renderCal(p) {
+  const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-month-label').textContent = `${calYear}년 ${MONTHS[calMonth]}`;
+  const legend = document.getElementById('cal-legend');
+  legend.innerHTML = PLATFORMS.map(pl=>`
+    <div class="legend-item">
+      <span class="post-dot" style="background:${PLATFORM_COLORS[pl]};width:7px;height:7px"></span>${pl}
+    </div>`).join('');
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const first = new Date(calYear,calMonth,1).getDay();
+  const days = new Date(calYear,calMonth+1,0).getDate();
+  for(let i=0;i<first;i++){const el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el);}
+  for(let d=1;d<=days;d++){
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = TODAY.getFullYear()===calYear&&TODAY.getMonth()===calMonth&&TODAY.getDate()===d;
+    if(isToday) el.classList.add('today');
+    const dayPosts = p.posts.filter(x=>x.date===dateStr);
+    el.innerHTML = `<div class="day-num">${d}</div>`+dayPosts.map(x=>`<span class="post-dot" style="background:${PLATFORM_COLORS[x.platform]}"></span>`).join('');
+    el.onclick = ()=>showDayPosts(dayPosts, dateStr);
+    grid.appendChild(el);
+  }
+  document.getElementById('day-posts').style.display='none';
+}
+
+function showDayPosts(dayPosts, dateStr) {
+  const el = document.getElementById('day-posts');
+  if(!dayPosts.length){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:8px;letter-spacing:0.06em">${dateStr}</div>`+
+    dayPosts.map(p=>`
+      <div class="post-item">
+        <span class="post-plat-dot" style="background:${PLATFORM_COLORS[p.platform]}"></span>
+        <div class="post-info">
+          <div class="post-title-text">${p.title}</div>
+          <div class="post-meta-text">${p.platform} · ${p.type}</div>
+        </div>
+        <div class="post-perf">
+          <div class="post-views">${fmtNum(p.views)}</div>
+          <div>${engRate(p).toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--muted2)">${engFormula(p.platform).split('=')[0].trim()}</div>
+        </div>
+      </div>`).join('');
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}const p=projects.find(x=>x.id===currentProjectId);if(p)renderCal(p);}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}const p=projects.find(x=>x.id===currentProjectId);if(p)renderCal(p);}
+
+// ── TOP TABLE ─────────────────────────────────────────────
+function renderTopTable(p) {
+  const sorted = p.posts.slice().sort((a,b)=>b.views-a.views).slice(0,7);
+  document.getElementById('top-tbody').innerHTML = sorted.map(x=>`
+    <tr>
+      <td>${x.title}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px"><span class="post-dot" style="background:${PLATFORM_COLORS[x.platform]};width:6px;height:6px"></span>${x.platform}</span></td>
+      <td>${x.type}</td>
+      <td>${fmtNum(x.views)}</td>
+      <td>${engRate(x).toFixed(1)}%</td>
+    </tr>`).join('');
+}
+
+// ── PROJECT MODAL ─────────────────────────────────────────
+let selectedColor = PROJECT_COLORS[0];
+function openProjectModal() {
+  selectedColor = PROJECT_COLORS[0];
+  document.getElementById('pf-name').value='';
+  document.getElementById('pf-desc').value='';
+  const cp = document.getElementById('color-picker');
+  cp.innerHTML = PROJECT_COLORS.map((c,i)=>`
+    <div class="color-opt${i===0?' selected':''}" style="background:${c}" data-c="${c}" onclick="selectColor(this,'${c}')"></div>`).join('');
+  document.getElementById('modal-project').classList.add('open');
+}
+function selectColor(el,c){selectedColor=c;document.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
+function saveProject(){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){alert('프로젝트 이름을 입력해주세요.');return;}
+  const id='p'+Date.now();
+  projects.push({id,name,desc:document.getElementById('pf-desc').value.trim(),color:selectedColor,posts:[]});
+  closeModal('modal-project');
+  renderNav();
+  renderDashboard();
+}
+function deleteCurrentProject(){
+  if(!currentProjectId)return;
+  if(!confirm('이 프로젝트를 삭제할까요?'))return;
+  projects=projects.filter(p=>p.id!==currentProjectId);
+  currentProjectId=null;
+  renderNav();
+  renderDashboard();
+  const dashEl=document.querySelector('.nav-item');
+  showPage('dashboard',dashEl);
+}
+
+// ── POST MODAL ───────────────────────────────────────────
+function openPostModal(){
+  document.getElementById('cf-date').value=TODAY.toISOString().split('T')[0];
+  ['cf-views','cf-likes','cf-comments','cf-shares','cf-title'].forEach(id=>document.getElementById(id).value='');
+  updateFormulaHint();
+  document.getElementById('modal-post').classList.add('open');
+}
+function updateFormulaHint(){
+  const pl=document.getElementById('cf-platform').value;
+  document.getElementById('eng-formula-hint').textContent=engFormula(pl);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const plSel=document.getElementById('cf-platform');
+  if(plSel) plSel.addEventListener('change',updateFormulaHint);
+});
+function savePost(){
+  const p=projects.find(x=>x.id===currentProjectId);
+  if(!p)return;
+  const date=document.getElementById('cf-date').value;
+  if(!date){alert('날짜를 선택해주세요.');return;}
+  p.posts.push({
+    date,
+    platform:document.getElementById('cf-platform').value,
+    type:document.getElementById('cf-type').value,
+    title:document.getElementById('cf-title').value||'제목 없음',
+    views:parseInt(document.getElementById('cf-views').value)||0,
+    likes:parseInt(document.getElementById('cf-likes').value)||0,
+    comments:parseInt(document.getElementById('cf-comments').value)||0,
+    shares:parseInt(document.getElementById('cf-shares').value)||0,
+  });
+  closeModal('modal-post');
+  const d=new Date(date);calYear=d.getFullYear();calMonth=d.getMonth();
+  renderProjectPage(p);
+  renderDashboard();
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// ── INIT ─────────────────────────────────────────────────
+renderNav();
+renderDashboard();
+</script>
+</body>
+</html>
