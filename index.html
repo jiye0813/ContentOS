@@ -306,11 +306,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14
       <div class="field">
         <label>콘텐츠 유형</label>
         <select id="cf-type">
-          <option value="공지">공지/업데이트</option>
+          <option value="공지">공지</option>
+          <option value="업데이트">업데이트</option>
           <option value="이벤트">이벤트</option>
-          <option value="밈">밈/유머</option>
-          <option value="영상">영상</option>
-          <option value="팬아트">팬아트/UGC</option>
+          <option value="판매">판매</option>
+          <option value="동영상">동영상</option>
+          <option value="참여형">참여형</option>
+          <option value="기타">기타</option>
         </select>
       </div>
       <div class="field">
@@ -354,7 +356,7 @@ const PLATFORM_COLORS = {
   YouTube:'#E24B4A', 공식홈페이지:'#7F77DD'
 };
 const PLATFORMS = ['X','Instagram','Discord','YouTube','공식홈페이지'];
-const TYPES = ['공지','이벤트','밈','영상','팬아트'];
+const TYPES = ['공지','업데이트','이벤트','판매','동영상','참여형','기타'];
 const PROJECT_COLORS = ['#c8f561','#61b8f5','#f561a4','#f5a461','#61f5d4','#a461f5','#f56161'];
 
 // 참여율 공식 (플랫폼별)
@@ -383,30 +385,40 @@ function fmtNum(n) {
 
 let projects = [
   {
-    id:'p1', name:'아이온 클래식 라이브', desc:'국내 공식 SNS 운영 (2021~2025)', color:'#c8f561',
+    id:'p1', name:'마비노기', desc:'PC MMORPG 공식 SNS 운영', color:'#c8f561',
     posts:[
-      {date:'2025-03-04',platform:'X',type:'공지',title:'3월 업데이트 공지',views:12400,likes:380,comments:54,shares:210},
-      {date:'2025-03-06',platform:'공식홈페이지',type:'공지',title:'8.4 패치노트',views:28000,likes:0,comments:320,shares:0},
-      {date:'2025-03-08',platform:'YouTube',type:'영상',title:'업데이트 트레일러',views:54000,likes:2100,comments:430,shares:0},
-      {date:'2025-03-10',platform:'Instagram',type:'이벤트',title:'봄 이벤트 홍보',views:32000,likes:1800,comments:290,shares:120},
-      {date:'2025-03-12',platform:'Discord',type:'밈',title:'커뮤니티 밈',views:4200,likes:320,comments:210,shares:40},
-      {date:'2025-03-15',platform:'X',type:'팬아트',title:'팬아트 소개',views:9800,likes:620,comments:88,shares:340},
-      {date:'2025-03-18',platform:'공식홈페이지',type:'이벤트',title:'봄 이벤트 상세',views:19200,likes:0,comments:188,shares:0},
-      {date:'2025-03-21',platform:'YouTube',type:'영상',title:'개발자 노트 영상',views:38000,likes:1600,comments:310,shares:0},
-      {date:'2025-03-24',platform:'Instagram',type:'밈',title:'인스타 밈',views:21000,likes:1100,comments:220,shares:75},
-      {date:'2025-03-27',platform:'Discord',type:'이벤트',title:'디스코드 챌린지',views:3100,likes:280,comments:190,shares:30},
+      {date:'2025-03-03',platform:'공식홈페이지',type:'공지',title:'3월 정기점검 안내',views:31000,likes:0,comments:248,shares:0},
+      {date:'2025-03-05',platform:'X',type:'업데이트',title:'G29 업데이트: 신규 아르카나 공개',views:18400,likes:920,comments:310,shares:640},
+      {date:'2025-03-07',platform:'YouTube',type:'동영상',title:'G29 업데이트 트레일러',views:72000,likes:3200,comments:580,shares:0},
+      {date:'2025-03-08',platform:'Instagram',type:'이벤트',title:'봄맞이 탈틴 농장 이벤트',views:41000,likes:2100,comments:380,shares:210},
+      {date:'2025-03-10',platform:'Discord',type:'참여형',title:'최애 아르카나 투표',views:5800,likes:640,comments:420,shares:80},
+      {date:'2025-03-12',platform:'X',type:'판매',title:'3월 패션위크 의상 패키지 출시',views:14200,likes:540,comments:180,shares:290},
+      {date:'2025-03-14',platform:'공식홈페이지',type:'이벤트',title:'봄 이벤트 상세 안내',views:24800,likes:0,comments:192,shares:0},
+      {date:'2025-03-17',platform:'YouTube',type:'동영상',title:'개발자 노트 — G29 제작기',views:48000,likes:2400,comments:490,shares:0},
+      {date:'2025-03-19',platform:'Instagram',type:'참여형',title:'캠프파이어 스크린샷 공모전',views:36000,likes:2800,comments:610,shares:340},
+      {date:'2025-03-21',platform:'X',type:'기타',title:'마비노기 16주년 팬아트 소개',views:11800,likes:780,comments:140,shares:420},
+      {date:'2025-03-24',platform:'Discord',type:'공지',title:'서버 점검 공지',views:3200,likes:120,comments:88,shares:20},
+      {date:'2025-03-26',platform:'공식홈페이지',type:'업데이트',title:'3월 밸런스 패치노트',views:28600,likes:0,comments:334,shares:0},
+      {date:'2025-03-28',platform:'X',type:'이벤트',title:'출석체크 이벤트 오픈',views:9600,likes:480,comments:92,shares:210},
     ]
   },
   {
-    id:'p2', name:'아이온 북미 마케팅', desc:'북미 서비스 콘텐츠 지원 (해외)', color:'#61b8f5',
+    id:'p2', name:'마비노기 모바일', desc:'모바일 MMORPG 공식 SNS 운영', color:'#f561a4',
     posts:[
-      {date:'2025-03-03',platform:'X',type:'공지',title:'March Update Notice',views:18200,likes:720,comments:94,shares:410},
-      {date:'2025-03-05',platform:'공식홈페이지',type:'공지',title:'8.4 Patch Notes EN',views:41000,likes:0,comments:520,shares:0},
-      {date:'2025-03-09',platform:'YouTube',type:'영상',title:'Update Trailer EN',views:89000,likes:3800,comments:720,shares:0},
-      {date:'2025-03-13',platform:'Instagram',type:'이벤트',title:'Spring Event EN',views:48000,likes:2900,comments:440,shares:280},
-      {date:'2025-03-17',platform:'Discord',type:'공지',title:'Community Notice',views:6800,likes:480,comments:310,shares:90},
-      {date:'2025-03-22',platform:'X',type:'밈',title:'Community Meme',views:31000,likes:1800,comments:620,shares:980},
-      {date:'2025-03-26',platform:'공식홈페이지',type:'이벤트',title:'Spring Event Page',views:33000,likes:0,comments:290,shares:0},
+      {date:'2025-03-02',platform:'공식홈페이지',type:'공지',title:'3월 정기점검 및 업데이트 안내',views:44000,likes:0,comments:412,shares:0},
+      {date:'2025-03-04',platform:'YouTube',type:'동영상',title:'여신강림 5장 신규 스토리 트레일러',views:118000,likes:5400,comments:920,shares:0},
+      {date:'2025-03-05',platform:'X',type:'업데이트',title:'3월 업데이트 — 신규 전직 공개',views:28800,likes:1480,comments:520,shares:880},
+      {date:'2025-03-07',platform:'Instagram',type:'이벤트',title:'봄 시즌 로그인 이벤트',views:64000,likes:3800,comments:610,shares:390},
+      {date:'2025-03-09',platform:'Discord',type:'참여형',title:'신규 전직 첫인상 공유',views:8400,likes:920,comments:680,shares:110},
+      {date:'2025-03-11',platform:'X',type:'판매',title:'봄 한정 의상 패키지 출시',views:22600,likes:1020,comments:280,shares:560},
+      {date:'2025-03-13',platform:'공식홈페이지',type:'이벤트',title:'에이렐 레이드 이벤트 안내',views:38000,likes:0,comments:298,shares:0},
+      {date:'2025-03-15',platform:'YouTube',type:'동영상',title:'신규 전직 플레이 가이드',views:84000,likes:3900,comments:740,shares:0},
+      {date:'2025-03-18',platform:'Instagram',type:'참여형',title:'내 캐릭터 자랑 챌린지',views:71000,likes:4900,comments:830,shares:520},
+      {date:'2025-03-20',platform:'X',type:'기타',title:'팬아트 위클리 소개',views:16400,likes:1100,comments:220,shares:580},
+      {date:'2025-03-22',platform:'Discord',type:'업데이트',title:'밸런스 패치 프리뷰',views:9800,likes:740,comments:510,shares:140},
+      {date:'2025-03-25',platform:'공식홈페이지',type:'업데이트',title:'3월 후반 업데이트 패치노트',views:51000,likes:0,comments:488,shares:0},
+      {date:'2025-03-27',platform:'X',type:'이벤트',title:'출석체크 이벤트 오픈',views:13200,likes:680,comments:140,shares:320},
+      {date:'2025-03-29',platform:'Instagram',type:'판매',title:'4월 시즌패스 사전 예고',views:48000,likes:2900,comments:440,shares:280},
     ]
   }
 ];
